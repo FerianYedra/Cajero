@@ -1,14 +1,19 @@
 /*This program is a simulation of a software that could be implemented in an ATM
- * Version 1.0*/
+ * Version 2.0*/
 
 #include <stdio.h>
 #include "user.h"
-#include "prot.h"
+#include "cajero.h"
 #define MAX 10
 
-int main(){
+int main(int argc, char *argv[]){
     int option=0, SN=1001;
     struct ent user[1];
+
+    if (argv[1][0]=='a'){
+        admin();
+    }
+
     while(option!=3){
         printf("------Welcome to the ATM------\n");
         printf("1. Login\n");
@@ -35,15 +40,24 @@ int main(){
 }
 
 void login(struct ent user[]){
-    int var=0, pass= 0;
+    int id=0, pass= 0;
+    FILE *fp;
+    char file[6];
     printf("Type your user ID or type (1) to create a new account\n");
     printf("ID: ");
-    scanf("%i", &var);
-    if(var==1){
+    scanf(" %i", &id);
+    if(id!=1){
+        sprintf(file,"%i",id);
+        fp=fopen(file,"r");
+        fscanf(fp,"%i",&user[0].id);
+        fclose(fp);
+    }else if(id==1){
         newaccount(user);
-    }else if(var==user[0].id){
+    }
+    if(id==user[0].id){
+        loadfile(user);
         printf("Password: ");
-        scanf("%i", &pass);
+        scanf(" %i", &pass);
         if(pass==user[0].password){
             printmenu(user);
         }
@@ -53,21 +67,32 @@ void login(struct ent user[]){
 }
 
 void newaccount(struct ent user[]){
-    int option=0;
+    int option=0,id;
+    FILE *fp;
     printf("------Welcome to the New User Configuration------\n");
     printf("1. Continue\n");
     printf("2. Cancel\n");
     printf("Do you wish to continue? ");
     scanf("%i", &option);
     if(option==1){
-        printf("Choose an ID (between 1000 and 9999): ");
-        scanf("%i", &user[0].id);
+        printf("Generating ID...\n");
+        fp=fopen("IDdata.txt","r");
+        fscanf(fp,"%i", &id);
+        fclose(fp);
+        id++;
+        user[0].id=id;
+        fp=fopen("IDdata.txt","w");
+        fprintf(fp,"%i",id);
+        fclose(fp);
+        printf("ID generated succesfully: %i\n",id);
         printf("Choose a password (between 1000 and 9999): ");
         scanf("%i", &user[0].password);
         printf("Enter your name: ");
-        scanf(" %[^\n]", &user[0].name);
+        scanf(" %[^\n]", user[0].name);
         user[0].balance=0;
+        user[0].usage=1;
         printf("New user created, loging in...\n");
+        writechanges(user);
         printmenu(user);
     }else{
         printf("[CANCELED] Returning to home menu...\n");
@@ -77,7 +102,7 @@ void newaccount(struct ent user[]){
 void printmenu(struct ent user[]){
     int option=0;
     while(option!=3){
-        printf("------Welcome User: %s------\n", user[0].name);
+        printf("\n------Welcome User: %s------\n", user[0].name);
         printf("ID: %i\n", user[0].id);
         printf("Current balance: $%f\n", user[0].balance);
         printf("---------------------------------------\n");
@@ -152,6 +177,7 @@ void balance(struct ent user[]){
             printf("[CANCELLED] Returning to acount...\n");
             break;
     }
+    writechanges(user);
 }
 
 void usersettings(struct ent user[]){
@@ -241,4 +267,51 @@ void usersettings(struct ent user[]){
             printf("[CANCELLED] Returning to account...\n");
             break;
     }
+    writechanges(user);
+}
+
+void admin(){
+    int tempass, adminpass=1234;
+
+    printf("Runnning in admin mode...\n");
+    printf("Password: ");
+    scanf("%i", &tempass);
+    if (tempass==adminpass){
+        printf("Loging in as admin...\n");
+        printf("Admin still not available\n");
+    }
+}
+
+int writechanges(struct ent user[]){
+    FILE *fp;
+    char tempid[6];
+    printf("Saving changes...\n");
+    sprintf(tempid,"%i",user[0].id);
+    fp=fopen(tempid,"w");
+    if (fp==NULL){
+        printf("ERROR: Saving failed\n");
+        return 1;
+    }
+    fprintf(fp,"%i\n",user[0].id);
+    fprintf(fp,"%s\n",user[0].name);
+    fprintf(fp,"%i\n",user[0].password);
+    fprintf(fp,"%f\n",user[0].balance);
+    fprintf(fp,"%i\n",user[0].usage);
+    fclose(fp);
+    printf("Chages saved\n");
+    return 0;
+}
+void loadfile(struct ent user[]){
+    FILE *fp;
+    char tempid[6];
+    printf("Loading files...\n");
+    sprintf(tempid,"%i",user[0].id);
+    fp=fopen(tempid,"r");
+    fscanf(fp,"%i\n",&user[0].id);
+    fscanf(fp,"%[^\n]\n",user[0].name);
+    fscanf(fp,"%i\n",&user[0].password);
+    fscanf(fp,"%f\n",&user[0].balance);
+    fscanf(fp,"%i\n",&user[0].usage);
+    printf("Files loaded\n");
+    fclose(fp);
 }
