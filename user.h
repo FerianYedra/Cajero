@@ -1,4 +1,4 @@
-//Structure for the users of the ATM
+//Structure for the users of the ATM, includes several points
 
 struct ent{
     int id;
